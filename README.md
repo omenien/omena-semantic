@@ -1,6 +1,6 @@
 # `omena-semantic`
 
-Internal Rust crate for the style semantic boundary.
+Rust crate for the style semantic boundary.
 
 This crate is intentionally small: it consumes the parser boundary from
 `engine-style-parser` and exposes semantic-facing summaries without moving the
@@ -26,7 +26,14 @@ Current public products:
 
 Primary check:
 
-- `cargo test --manifest-path rust/Cargo.toml -p omena-semantic`
+- `cargo fmt --all --check`
+- `cargo test`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+
+Publish status:
+
+- `publish = false` remains in place until `omena-engine-input-producers` and
+  `omena-engine-style-parser` are available as registry dependencies.
 
 CLI smoke:
 
