@@ -3,18 +3,18 @@ name = "omena-semantic"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-publish = false
 description = "Semantic boundary crate for CSS Module Explainer style analysis"
 repository = "https://github.com/omenien/omena-semantic"
 readme = "README.md"
 keywords = ["omena", "css-modules", "semantics", "scss", "less"]
 categories = ["development-tools"]
+exclude = [".github/**"]
 
 [lints]
 rust.unsafe_code = "forbid"
 
 [dependencies]
-engine-input-producers = { package = "omena-engine-input-producers", git = "https://github.com/omenien/omena-engine-input-producers.git", rev = "0e71623" }
-engine-style-parser = { package = "omena-engine-style-parser", git = "https://github.com/omenien/omena-engine-style-parser.git", rev = "561e119" }
+engine-input-producers = { package = "omena-engine-input-producers", version = "0.1.0" }
+engine-style-parser = { package = "omena-engine-style-parser", version = "0.1.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
