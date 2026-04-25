@@ -8,15 +8,8 @@ description = "Semantic boundary crate for CSS Module Explainer style analysis"
 repository = "https://github.com/omenien/omena-semantic"
 readme = "README.md"
 
-[lints.rust]
-unsafe_code = "deny"
-
-[lints.clippy]
-dbg_macro = "warn"
-todo = "warn"
-unwrap_used = "warn"
-expect_used = "warn"
-panic = "warn"
+[lints]
+rust.unsafe_code = "forbid"
 
 [dependencies]
 engine-input-producers = { git = "https://github.com/omenien/omena-engine-input-producers.git", rev = "074b2fd" }
