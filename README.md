@@ -14,6 +14,9 @@ Current public products:
 - `omena-semantic.style-semantic-graph`
 - `omena-semantic.theory-observation-harness`
 
+`omena-semantic.source-input-evidence` includes value-domain derivation counts
+from the source-backed expression-semantics payload.
+
 Primary check:
 
 ```sh
