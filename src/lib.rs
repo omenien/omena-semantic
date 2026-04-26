@@ -1,6 +1,7 @@
 use engine_input_producers::EngineInputV2;
 use engine_style_parser::{
-    ParserBoundarySyntaxFactsV0, StyleSemanticFactsV0, Stylesheet, summarize_semantic_boundary,
+    ParserBoundarySyntaxFactsV0, StyleSemanticFactsV0, Stylesheet, parse_style_module,
+    summarize_semantic_boundary,
 };
 use serde::Serialize;
 
@@ -8,6 +9,7 @@ mod evidence;
 mod lossless_cst;
 mod observation;
 mod selector_identity;
+mod selector_references;
 mod source_evidence;
 
 pub use evidence::{
@@ -27,6 +29,10 @@ pub use observation::{
 pub use selector_identity::{
     SelectorCanonicalIdentityV0, SelectorIdentityEngineSummaryV0, SelectorIdentityRewriteSafetyV0,
     summarize_selector_identity_engine,
+};
+pub use selector_references::{
+    SelectorEditableDirectReferenceSiteV0, SelectorReferenceEngineSummaryV0,
+    SelectorReferenceSiteV0, SelectorReferenceSummaryV0, summarize_selector_reference_engine,
 };
 pub use source_evidence::{
     BindingOriginEvidenceV0, CertaintyReasonEvidenceV0, ReferenceSiteIdentityEvidenceV0,
@@ -55,6 +61,7 @@ pub struct StyleSemanticGraphSummaryV0 {
     pub parser_facts: ParserBoundarySyntaxFactsV0,
     pub semantic_facts: StyleSemanticFactsV0,
     pub selector_identity_engine: SelectorIdentityEngineSummaryV0,
+    pub selector_reference_engine: SelectorReferenceEngineSummaryV0,
     pub source_input_evidence: SourceInputPromotionEvidenceSummaryV0,
     pub promotion_evidence: SemanticPromotionEvidenceSummaryV0,
     pub lossless_cst_contract: LosslessCstContractV0,
@@ -84,11 +91,20 @@ pub fn summarize_style_semantic_graph(
     sheet: &Stylesheet,
     input: &EngineInputV2,
 ) -> StyleSemanticGraphSummaryV0 {
+    summarize_style_semantic_graph_for_path(sheet, input, None)
+}
+
+pub fn summarize_style_semantic_graph_for_path(
+    sheet: &Stylesheet,
+    input: &EngineInputV2,
+    style_path: Option<&str>,
+) -> StyleSemanticGraphSummaryV0 {
     let boundary = summarize_semantic_boundary(sheet);
     let parser_facts = boundary.parser_facts;
     let semantic_facts = boundary.semantic_facts;
     let selector_identity_engine =
         summarize_selector_identity_engine(&semantic_facts.selector_identity);
+    let selector_reference_engine = summarize_selector_reference_engine(input, style_path);
     let source_input_evidence = summarize_source_input_evidence(input);
     let promotion_evidence = summarize_semantic_promotion_evidence_with_source_input(
         &parser_facts,
@@ -104,10 +120,24 @@ pub fn summarize_style_semantic_graph(
         parser_facts,
         semantic_facts,
         selector_identity_engine,
+        selector_reference_engine,
         source_input_evidence,
         promotion_evidence,
         lossless_cst_contract,
     }
+}
+
+pub fn summarize_style_semantic_graph_from_source(
+    style_path: &str,
+    style_source: &str,
+    input: &EngineInputV2,
+) -> Option<StyleSemanticGraphSummaryV0> {
+    let sheet = parse_style_module(style_path, style_source)?;
+    Some(summarize_style_semantic_graph_for_path(
+        &sheet,
+        input,
+        Some(style_path),
+    ))
 }
 
 pub fn summarize_style_semantic_facts(sheet: &Stylesheet) -> StyleSemanticFactsV0 {
@@ -133,8 +163,8 @@ mod tests {
         summarize_semantic_promotion_evidence,
         summarize_semantic_promotion_evidence_with_source_input, summarize_source_input_evidence,
         summarize_style_semantic_boundary, summarize_style_semantic_facts,
-        summarize_style_semantic_graph, summarize_theory_observation_contract,
-        summarize_theory_observation_harness,
+        summarize_style_semantic_graph, summarize_style_semantic_graph_from_source,
+        summarize_theory_observation_contract, summarize_theory_observation_harness,
     };
 
     #[test]
@@ -527,6 +557,13 @@ $color: red;
 
         assert_eq!(graph.product, "omena-semantic.style-semantic-graph");
         assert_eq!(graph.language, "scss");
+        assert_eq!(
+            graph.selector_reference_engine.product,
+            "omena-semantic.selector-references"
+        );
+        assert_eq!(graph.selector_reference_engine.selector_count, 2);
+        assert_eq!(graph.selector_reference_engine.referenced_selector_count, 2);
+        assert_eq!(graph.selector_reference_engine.total_reference_sites, 2);
         assert_eq!(graph.source_input_evidence.binding_origin.status, "ready");
         assert_eq!(
             graph
@@ -544,6 +581,30 @@ $color: red;
                 .span_invariants
                 .byte_span_contract_ready
         );
+        Ok(())
+    }
+
+    #[test]
+    fn summarizes_style_semantic_graph_from_source_for_host_consumers() -> Result<(), String> {
+        let graph = summarize_style_semantic_graph_from_source(
+            "/tmp/Component.module.scss",
+            ".button { color: red; }",
+            &sample_engine_input(),
+        )
+        .ok_or_else(|| "expected style semantic graph".to_string())?;
+
+        assert_eq!(graph.product, "omena-semantic.style-semantic-graph");
+        assert_eq!(graph.language, "scss");
+        assert_eq!(
+            graph.selector_identity_engine.product,
+            "omena-semantic.selector-identity"
+        );
+        assert_eq!(
+            graph.selector_reference_engine.style_path,
+            Some("/tmp/Component.module.scss".to_string())
+        );
+        assert_eq!(graph.selector_reference_engine.selector_count, 2);
+
         Ok(())
     }
 

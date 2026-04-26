@@ -1,78 +1,21 @@
 # `omena-semantic`
 
-Rust crate for the style semantic boundary.
+Rust semantic boundary crate for Omena style analysis.
 
-This crate is intentionally small: it consumes the parser boundary from
-`engine-style-parser` and exposes semantic-facing summaries without moving the
-parser implementation or changing existing parser consumers.
+This crate owns generic style semantic contracts. CME-coupled graph assembly
+can be layered on top through `omena-bridge`.
 
 Current public products:
 
-- `omena-semantic.style-semantic-graph` — combined parser boundary,
-  selector-identity, source-input evidence, promotion evidence, and lossless
-  CST contract for semantic graph consumers.
-- `omena-semantic.selector-identity` — canonical selector ids, BEM suffix
-  identity, and rewrite-safety blockers.
-- `omena-semantic.promotion-evidence` — explicit readiness/gap checklist for
-  promotion beyond output parity.
-- `omena-semantic.source-input-evidence` — `EngineInputV2`-backed reference
-  site identity, binding origin, style module edge, value-domain explanation,
-  and selector certainty reason evidence.
-- `omena-semantic.lossless-cst-contract` — byte-span invariants used by precise
-  rename, formatter, and recovery-oriented consumers.
-- `omena-semantic.theory-observation-harness` — observation-only readiness
-  summary for selector rewrite safety, source evidence explainability, semantic
-  graph downstream readiness, and generic-vs-CME coupling boundaries.
+- `omena-semantic.style-semantic-boundary`
+- `omena-semantic.selector-references`
+- `omena-semantic.source-input-evidence`
+- `omena-semantic.promotion-evidence`
+- `omena-semantic.style-semantic-graph`
+- `omena-semantic.theory-observation-harness`
 
 Primary check:
 
-- `cargo fmt --all --check`
-- `cargo test`
-- `cargo clippy --all-targets --all-features -- -D warnings`
-
-Publish status:
-
-- `publish = false` remains in place until `omena-engine-input-producers` and
-  `omena-engine-style-parser` are available as registry dependencies.
-
-CLI smoke:
-
 ```sh
-printf '.button { &__icon {} }' \
-  | cargo run --manifest-path rust/Cargo.toml -p omena-semantic --bin omena-semantic-boundary -- Component.module.scss
+cargo test
 ```
-
-For `EngineInputV2` source-side evidence:
-
-```sh
-cat engine-input-v2.json \
-  | cargo run --manifest-path rust/Cargo.toml -p omena-semantic --bin omena-semantic-source-evidence
-```
-
-For the combined style semantic graph product:
-
-```sh
-cat style-semantic-graph-input.json \
-  | cargo run --manifest-path rust/Cargo.toml -p omena-semantic --bin omena-semantic-graph
-```
-
-For the theory observation harness:
-
-```sh
-cat style-semantic-graph-input.json \
-  | cargo run --manifest-path rust/Cargo.toml -p omena-semantic --bin omena-semantic-observation
-```
-
-For the compact observation contract:
-
-```sh
-cat style-semantic-graph-input.json \
-  | cargo run --manifest-path rust/Cargo.toml -p omena-semantic --bin omena-semantic-observation-contract
-```
-
-Downstream consumers can use either the free function or the
-`TheoryObservationHarnessInput` trait. The trait is the dogfooding surface for
-consumers that should depend on an observation contract instead of a concrete
-builder entry point. Consumers that only need stable readiness state can call
-`summarize_theory_observation_contract` or the trait method
-`summarize_theory_observation_contract`.
