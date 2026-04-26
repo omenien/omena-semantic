@@ -1,11 +1,14 @@
 [package]
 name = "omena-semantic"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT"
 description = "Semantic boundary crate for Omena style analysis"
 repository = "https://github.com/omenien/omena-semantic"
 readme = "README.md"
+keywords = ["omena", "css-modules", "semantic", "analysis"]
+categories = ["development-tools"]
+exclude = [".github/**"]
 
 [lib]
 name = "omena_semantic"
@@ -22,7 +25,7 @@ expect_used = "warn"
 panic = "warn"
 
 [dependencies]
-engine-input-producers = { package = "omena-engine-input-producers", git = "https://github.com/omenien/omena-engine-input-producers.git", rev = "9e4d29c" }
-engine-style-parser = { package = "omena-engine-style-parser", git = "https://github.com/omenien/omena-engine-style-parser.git", rev = "4dcf39d" }
+engine-input-producers = { package = "omena-engine-input-producers", version = "0.1.0" }
+engine-style-parser = { package = "omena-engine-style-parser", version = "0.1.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
