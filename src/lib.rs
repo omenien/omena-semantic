@@ -14,9 +14,13 @@ mod selector_references;
 mod source_evidence;
 
 pub use design_tokens::{
-    DesignTokenCascadeRankingSignalV0, DesignTokenContextSignalV0, DesignTokenRankedReferenceV0,
+    DesignTokenCascadeRankingSignalV0, DesignTokenContextSignalV0,
+    DesignTokenExternalDeclarationCandidateScopeV0, DesignTokenRankedReferenceV0,
     DesignTokenResolutionSignalV0, DesignTokenSemanticCapabilitiesV0, DesignTokenSemanticSummaryV0,
+    DesignTokenWorkspaceDeclarationFactV0, collect_design_token_workspace_declarations,
     summarize_design_token_semantics,
+    summarize_design_token_semantics_with_scoped_workspace_declarations,
+    summarize_design_token_semantics_with_workspace_declarations,
 };
 pub use evidence::{
     SemanticPromotionEvidenceItemV0, SemanticPromotionEvidenceSummaryV0,
@@ -109,10 +113,29 @@ pub fn summarize_style_semantic_graph_for_path(
     input: &EngineInputV2,
     style_path: Option<&str>,
 ) -> StyleSemanticGraphSummaryV0 {
+    summarize_style_semantic_graph_for_path_with_workspace_declarations(
+        sheet,
+        input,
+        style_path,
+        &[],
+    )
+}
+
+pub fn summarize_style_semantic_graph_for_path_with_workspace_declarations(
+    sheet: &Stylesheet,
+    input: &EngineInputV2,
+    style_path: Option<&str>,
+    workspace_declarations: &[DesignTokenWorkspaceDeclarationFactV0],
+) -> StyleSemanticGraphSummaryV0 {
     let boundary = summarize_semantic_boundary(sheet);
     let parser_facts = boundary.parser_facts;
     let semantic_facts = boundary.semantic_facts;
-    let design_token_semantics = summarize_design_token_semantics(&parser_facts, &semantic_facts);
+    let design_token_semantics = summarize_design_token_semantics_with_workspace_declarations(
+        &parser_facts,
+        &semantic_facts,
+        style_path,
+        workspace_declarations,
+    );
     let selector_identity_engine =
         summarize_selector_identity_engine(&semantic_facts.selector_identity);
     let selector_reference_engine = summarize_selector_reference_engine(input, style_path);
@@ -721,6 +744,54 @@ $color: red;
         assert_eq!(second_ranked_reference.candidate_declaration_count, 3);
         assert!(summary.capabilities.source_order_cascade_ranking_ready);
         assert!(!summary.capabilities.cross_package_cascade_ranking_ready);
+        Ok(())
+    }
+
+    #[test]
+    fn ranks_theme_context_declarations_ahead_of_later_root_tokens() -> Result<(), String> {
+        let sheet = parse_style_module(
+            "Component.module.css",
+            r#"
+:root {
+  --surface: white;
+}
+
+[data-theme="dark"] {
+  --surface: black;
+}
+
+:root {
+  --surface: beige;
+}
+
+[data-theme="dark"] .button {
+  color: var(--surface);
+}
+"#,
+        )
+        .ok_or_else(|| "CSS module path should parse".to_string())?;
+
+        let summary = summarize_style_semantic_boundary(&sheet).design_token_semantics;
+
+        assert_eq!(summary.status, "same-file-cascade-ranking-seed");
+        assert_eq!(summary.cascade_ranking_signal.ranked_reference_count, 1);
+        assert_eq!(
+            summary
+                .cascade_ranking_signal
+                .theme_context_winner_reference_count,
+            1
+        );
+        let ranked_reference = &summary.cascade_ranking_signal.ranked_references[0];
+        assert_eq!(ranked_reference.reference_name, "--surface");
+        assert_eq!(ranked_reference.winner_declaration_source_order, 1);
+        assert_eq!(
+            ranked_reference.shadowed_declaration_source_orders,
+            vec![0, 2]
+        );
+        assert_eq!(ranked_reference.winner_context_kind, "selector");
+        assert!(summary.capabilities.theme_override_context_ready);
+        assert!(!summary.blocking_gaps.contains(&"themeOverrideContext"));
+        assert!(!summary.next_priorities.contains(&"themeOverrideContext"));
         Ok(())
     }
 
