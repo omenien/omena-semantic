@@ -46,7 +46,7 @@ dependencies = [
 
 [[package]]
 name = "omena-semantic"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "omena-engine-input-producers",
  "omena-engine-style-parser",
